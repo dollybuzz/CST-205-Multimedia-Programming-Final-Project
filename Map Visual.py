@@ -50,7 +50,7 @@ Type help to redisplay this message.\n'''
   Bathroom.neighborEast = Bedroom
   Kitchen.neighborEast = LivingRoom
   Basement.neighborUp = LivingRoom
-  #Basement.neighborWest = SecretRoom
+  Basement.neighborWest = SecretRoom
   SecretRoom.neighborEast = Basement
 
 # Prompts user for name.
@@ -76,8 +76,8 @@ Type help to redisplay this message.\n'''
   fridge = Item("fridge",isTakeable = false)
   fridge.use = "You open the fridge. There is nothing intersting."
   cupboard = Item("cupboard",isTakeable = false)
-  cupboard.use = ("You open the shelf, but there is nothing there.")
-  keys = SecretItem("keys") # this is revealed when they open the cupboard
+  cupboard.use = ("You open the cupboard.")
+  keys = SecretItem("keys") # This is revealed when they open the cupboard.
   banana = Item("banana")
   banana.use= "You eat the banana."
   Kitchen.items.extend([sink,fridge,cupboard,banana,keys]) # This is the kitchen items.
@@ -125,6 +125,9 @@ Type help to redisplay this message.\n'''
   myPlayer.location.displayItems()
   myPlayer.displayItems()
   
+  # Create the map
+  map = Map()
+  
   # Initialize a counter for how many times they have moved rooms and how many allowed.
   maxcount = 20
   steps = 0 
@@ -137,13 +140,16 @@ Type help to redisplay this message.\n'''
   while true:
 # Lose conditions.
     if steps >= maxcount:
-      showInformation("You ran out of time. You can only make so many moves. \n\n" + mPlayer.name.upper() + ", YOU LOSE!\n")
+      map.showPlayerUpset(myPlayer.location.name)
+      showInformation("You ran out of time. You can only make so many moves. \n\n" + myPlayer.name.upper() + ", YOU LOSE!\n")
       break
     if myPlayer.location != Garage and myPlayer.contains(shoes): 
+      map.showPlayerUpset(myPlayer.location.name)
       showInformation("You can't enter with your shoes on.\n\n" + myPlayer.name.upper() + ", YOU LOSE!\n")
       break
 # Win conditions.
     if treasure in myPlayer.items:
+      map.showPlayerHappy(myPlayer.location.name)
       showInformation(myPlayer.name.upper() + ", YOU WIN!")
       break 
 # Secret room reveal condition.
@@ -156,7 +162,9 @@ Type help to redisplay this message.\n'''
       showInformation("You are now exiting the game!")
       break
     elif command == "north" or command == "south" or command == "east" or command == "west":
+      previousRoom = myPlayer.location
       steps += myPlayer.move(command)
+      map.movePlayer(previousRoom.name,myPlayer.location.name,command)
     elif command == "help":
       showInformation(actions)
       myPlayer.location.description()
@@ -166,9 +174,13 @@ Type help to redisplay this message.\n'''
       myPlayer.location.description()
       myPlayer.location.direction()
     elif command == "climb up":
-      steps += myPlayer.climbUp() 
+      previousRoom = myPlayer.location
+      steps += myPlayer.climbUp()
+      map.movePlayer(previousRoom.name,myPlayer.location.name,"up")
     elif command == "climb down":
+      previousRoom = myPlayer.location
       steps += myPlayer.climbDown()
+      map.movePlayer(previousRoom.name,myPlayer.location.name,"down")
     elif command == "examine":
       myPlayer.location.displayItems()
     elif command == "inventory":
@@ -178,7 +190,7 @@ Type help to redisplay this message.\n'''
       myPlayer.location.direction()
     elif command == "take":
       item = requestString("What item do you want to take?")
-      myPlayer.take(item)
+      myPlayer.takeItem(item)
     elif command == "drop":
       item = requestString("Which item do you want to drop?")
       myPlayer.dropItem(item)
@@ -186,10 +198,16 @@ Type help to redisplay this message.\n'''
       item = requestString("What item do you want to use?")
       use = myPlayer.useItem(item, Basement, isUnlocked)
       if use == -1:
+        map.showPlayerUpset(myPlayer.location.name)
         showInformation(name.upper() + ", YOU LOSE!\n")
         break
       elif use == 1:
         isUnlocked = true
+        map.revealSecretRoom()
+        showInformation("You opened the Secret Room with the " + item + ".\nYou can now go west to enter.\n")
+      elif use == 2:
+        keys.isRevealed = true
+        printNow("You discover a set of keys.\n")
     else:
       printNow("Please type a valid command.\n")
   
@@ -258,65 +276,142 @@ class Room(object):
       
       
 #############################################################################
-#Creating the visual Map. This is NOT the Map class.
-#Does not have to be defined to a class since it
-#is not a use-able object and can simply be
-#called in main() to update the visual map.
-def createMap():
-  setMediaPath()
-  secretRoom = makePicture("hiddenroom.jpg")
-  mainMap = makePicture("original map.jpg")
-  winPlayer = makePicture("happy.png")
-  winPlayerFlip = makePicture("happyflip.png")
-  player = makePicture("neutral.png")
-  playerFlip = makePicture("neutralflip.png")
-  losePlayer = makePicture("upset.png")
-  losePlayerFlip = makePicture("upsetflip.png")
-  atticPlayer = makePicture("attic.png")
-  atticPlayerFlip = makePicture("atticflip.png")
-  
-#Player coordinates. 
-#Uncomment second call to see the flipped version.
-#garage
-  chromaKey(secretRoom, playerFlip, 770, 410)
-  #chromaKey(secretRoom, player, 770, 410)
-#basement
-  chromaKey(secretRoom, playerFlip, 570, 525)
-  #chromaKey(secretRoom, player, 570, 525)
-#secretRoom
-  chromaKey(secretRoom, playerFlip, 340, 525)
-  #chromaKey(secretRoom, player, 340, 525)
-#pantry (room next to garage)
-  chromaKey(secretRoom, playerFlip, 645, 390)
-  #chromaKey(secretRoom, player, 645, 390)
-#living room
-  chromaKey(secretRoom, playerFlip, 320, 390)
-  #chromaKey(secretRoom, player, 320, 390)
-#kitchen
-  chromaKey(secretRoom, playerFlip, 100, 390)
-  #chromaKey(secretRoom, player, 100, 390)
-#bedroom
-  chromaKey(secretRoom, playerFlip, 450, 215)
-  #chromaKey(secretRoom, player, 450, 215)
-#bathroom
-  chromaKey(secretRoom, playerFlip, 300, 215)
-  #chromaKey(secretRoom, player, 300, 215)
-#attic
-  chromaKey(secretRoom, atticPlayerFlip, 460, 120)
-  #chromaKey(secretRoom, atticPlayer, 460, 120)   
+#Creating the visual Map. Shows the map.
+class Map(object):
+  # Initiates the map to not reveal the secret room
+  def __init__(self):
+    setMediaPath()
+    self.mainMap = makePicture("original map.jpg")
+    self.currentMap = duplicatePicture(self.mainMap) 
+    self.player = makePicture("neutralflip.png") # Initializes the player facing west.
+    self.playerDir = "west"
+    self.movePlayer("Garage","Garage","none") # Initialize the player in the Garage.
 
-#This is required to insert image of player into map image.    
-def chromaKey(background, pic, xloc, yloc):
-  width = getWidth(pic)
-  height = getHeight(pic)
-  comparator = getColor(getPixel(pic,0,0))
-  for x in range(width):
-    for y in range(height):
-      pix = getPixel(pic, x,y)
-      color = getColor(pix)
-      if color != comparator:
-      	setColor(getPixel(background,x+xloc,y+yloc), color)
-  repaint(background) 
+  # Repaints the map with the player in the given room.
+  def movePlayer(self, previousRoomName, roomName,direction):
+    # Erase player.
+    self.erasePlayer(previousRoomName) 
+    xloc, yloc = self.getCoordinates(roomName)
+    # Check if need to change player pic to/from attic
+    if roomName == "Attic":
+      self.player = makePicture("attic.png") 
+    elif previousRoomName == "Attic":
+      self.player = makePicture("neutralflip.png")
+      self.playerDir = "west"
+    # Change player to east or west facing
+    if direction == "east" and self.playerDir != "east":
+      self.player = makePicture("neutral.png")
+      self.playerDir = "east"
+    elif (direction == "west" or direction == "down") and self.playerDir != "west":
+      self.player = makePicture("neutralflip.png")
+      self.playerDir = "west"
+    # Repaint player.
+    self.chromaKey(xloc, yloc)
+  
+  # Sets the mainMap to have the secret room revealed and shows a new map.
+  def revealSecretRoom(self):
+    hiddenRoom = makePicture("hiddenroom.jpg")
+    for x in range(242,420): # Used explore to find coordinates to only repaint the secret room area of the image.
+      for y in range(518,641):
+        color = getColor(getPixel(hiddenRoom,x,y))
+        setColor(getPixel(self.currentMap,x,y),color)
+        setColor(getPixel(self.mainMap,x,y),color) # Adds secret room to mainMap so is there from now on.
+    repaint(self.currentMap)
+  
+  # Sets the player to be upset looking and repaints the map.
+  def showPlayerUpset(self,roomName):
+    self.player = makePicture("upset.png")
+    self.movePlayer(roomName,roomName,"none")
+    
+  # Sets the player to be happy looking and repaints the map.
+  def showPlayerHappy(self,roomName):
+    self.player = makePicture("happy.png")
+    self.movePlayer(roomName,roomName,"none")
+    
+  # Erase the player (to be called before copying player into new room)
+  def erasePlayer(self,previousRoom):
+    xloc, yloc = self.getCoordinates(previousRoom)
+    width = getWidth(self.player)
+    height = getHeight(self.player)
+    for x in range(width):
+      for y in range(height):
+        color = getColor(getPixel(self.mainMap,x+xloc,y+yloc))
+        setColor(getPixel(self.currentMap,x+xloc,y+yloc),color)
+    
+  #This is required to insert image of player into map image.    
+  def chromaKey(self, xloc, yloc):
+    pic = self.player
+    width = getWidth(pic)
+    height = getHeight(pic)
+    comparator = getColor(getPixel(pic,0,0))
+    for x in range(width):
+      for y in range(height):
+        pix = getPixel(pic, x,y)
+        color = getColor(pix)
+        if color != comparator:
+          setColor(getPixel(self.currentMap,x+xloc,y+yloc), color)
+    repaint(self.currentMap) 
+    
+  # Given a string with a room name, 
+  # returns the x,y coordinates to paint the player into the map.
+  def getCoordinates(self, roomName):
+    roomDict = {"Garage":(770, 410),
+                "Living Room":(320, 390),
+                "Kitchen":(100, 390),
+                "Bathroom":(300, 215),
+                "Bedroom":(450, 215),
+                "Attic":(460, 120),
+                "Basement":(570, 525),
+                "Pantry":(645, 390),
+                "Secret Room":(340, 525)}
+    xloc = roomDict[roomName][0]
+    yloc = roomDict[roomName][1]
+    return xloc, yloc
+    
+def testMap():
+  mymap = Map()
+  mymap.movePlayer("Garage","Garage","none")
+  requestString("OK?")
+  mymap.movePlayer("Garage","Pantry","west")
+  requestString("OK?")
+  mymap.movePlayer("Pantry","Living Room","west")
+  requestString("OK?")
+  mymap.movePlayer("Living Room","Kitchen","west")
+  requestString("OK?")
+  mymap.movePlayer("Kitchen","Living Room","east")
+  requestString("OK?")
+  mymap.movePlayer("Living Room","Bedroom","none")
+  requestString("OK?")
+  mymap.movePlayer("Bedroom","Bathroom","west")
+  requestString("OK?")
+  mymap.movePlayer("Bathroom","Bedroom","east")
+  requestString("OK?")
+  mymap.movePlayer("Bedroom","Attic","none")
+  requestString("OK?")
+  mymap.movePlayer("Attic","Bedroom","down")
+  requestString("OK?")
+  mymap.movePlayer("Bedroom","Living Room","down")
+  requestString("OK?")
+  mymap.movePlayer("Living Room","Basement","down")
+  requestString("OK?")
+  mymap.revealSecretRoom()
+  requestString("OK?")
+  mymap.movePlayer("Basement","Secret Room","west")
+  # mymap.revealSecretRoom()
+    
+  '''
+  #Haven't used the flipped versions yet. Should the player always face the direction they just moved?
+  secretRoom= makePicture("hiddenroom.jpg")
+  winPlayer = makePicture("happy.png")
+  #winPlayerFlip = makePicture("happyflip.png")
+  player = makePicture("neutral.png")
+  #playerFlip = makePicture("neutralflip.png")
+  losePlayer = makePicture("upset.png")
+  #losePlayerFlip = makePicture("upsetflip.png")
+  atticPlayer = makePicture("attic.png")
+  #atticPlayerFlip = makePicture("atticflip.png") 
+  '''
+ 
  
 ###################################################################################
 class Player(object):
@@ -383,28 +478,27 @@ class Player(object):
     else:
       printNow("You cannot climb that direction.\n") 
       return 0 
-      
+  
+  # Allows the player to use an item by printing what happens.
+  # Returns -1 if using the item is a lose condition
+  # Returns 1 if using the item unlocks the secret room
+  # Returns 2 if using the item reveals the secret item
   def useItem(self, inputItemName, basement, unlocked):
     inputItem = self.findItem(inputItemName) # Get the item of that name.
     
     # Check if trying to unlock the secret room.
     if inputItemName == "keys" and self.contains(inputItem) and self.location == basement and not unlocked:
-      showInformation("You opened the Secret Room with the " + inputItem + ".\nYou can now go south to enter.\n")
-      self.location.neighborSouth.doors = "one"
+      self.location.neighborWest.doors = "one"
       self.location.doors = "one"
       return 1
     elif inputItemName == "keys" and self.contains(inputItem) and self.location == basement and unlocked:
       printNow("You have already unlocked the Secret Room. You can go south to enter.\n")
     elif inputItemName == "keys" and not self.contains(inputItem) and self.location == basement and unlocked:
-      printNow("You do not have the " + inputItem + " but you have already opened this door.\n")
+      printNow("You do not have the " + inputItemName + " but you have already opened this door.\n")
       
     # Checks if item exists in player's inventory then room's.  
     if inputItem == None:
       inputItem = self.location.findItem(inputItemName)
-      if inputItemName == "cupboard":
-        # Reveal keys
-        inputItem.isRevealed = true
-        printNow("You discover a set of keys.\n")
     if inputItem == None:
       printNow("You cannot use the " + inputItemName + " becasue it is not in your inventory or in the room.\n")
     elif inputItem.isUsable:
@@ -413,14 +507,17 @@ class Player(object):
         return -1
       elif inputItemName == "banana":
         self.items.remove(inputItem)
+      elif inputItemName == "cupboard":
+        # Reveal keys
+        return 2
     else:
       printNow("You cannot use the " + inputItemName + " because it does not do anything./n")
       
-  def take(self, inputItemName):
-    inputItem = self.location.findItem(inputItemName) # !!!!!!!!!!!!! NEED TO IMPLEMENT ROOM.FINDITEMS !!!!!!!!!!!!!
-    if inputItem == None:
+  def takeItem(self, inputItemName):
+    inputItem = self.location.findItem(inputItemName)
+    if inputItem == None or (isinstance(inputItem, SecretItem) and not inputItem.isRevealed):
       printNow("You cannot take the " + inputItemName + " because it is not in the room with you.\n")
-    elif inputItem.isTakeable:
+    elif inputItem.isTakeable and (not isinstance(inputItem, SecretItem) or inputItem.isRevealed):
       self.items.append(inputItem)
       self.location.items.remove(inputItem)
       printNow("You have taken the " + inputItemName + ".\n")
@@ -501,3 +598,22 @@ def testFindItems():
   inputItem = me.findItem("banana")
   print "Using the findItem method returns the item " + str(inputItem)
   
+def testSecretItem():
+  Kitchen = Room("Kitchen", None, None, None, None, None, None, "one", false, [])
+  cupboard = Item("cupboard",isTakeable = false)
+  cupboard.use = ("You open the cupboard.")
+  keys = SecretItem("keys") # This is revealed when they open the cupboard.
+  Kitchen.items.extend([cupboard,keys])
+  player = Player("me",Kitchen)
+  printNow("Trying to take keys before opening cupboard")
+  player.takeItem("keys")
+  if player.useItem("cupboard","basement",false) == 2:
+    keys.isRevealed = true
+  printNow("The keys should now be revealed. isRevealed equals %s" %str(keys.isRevealed))
+  
+  
+def testSecretItemCreation():
+  keys = SecretItem("keys")
+  print keys.isRevealed
+  keys.isRevealed = true
+  print keys.isRevealed
