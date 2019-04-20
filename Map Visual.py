@@ -57,56 +57,56 @@ Type help to redisplay this message.\n'''
   name = requestString("What is your name?")
   
 # Initializes items
-  car = Item("car",isTakeable = false)
+  car = Item("car", isTakeable = false)
   car.use = "You cannot drive anywhere."
   Garage.items.append(car) # This is the garage items.
   
   chair = Item("chair",isTakeable = false)
-  footstool = Item("footstool")
+  footstool = Item("footstool",isTakeable=false)
   tv = Item("tv",isTakeable = false)
-  tv.use = "You look through the channels and there is nothing interesting."
+  tv.use = "You look through the channels and there is nothing interesting.\n"
   monitor = Item("monitor",isTakeable = false)
-  monitor.use = "You do not know the password. You cannot use the computer."
+  monitor.use = "You do not know the password. You cannot use the computer.\n"
   slidingDoor = Item("sliding door",isTakeable = false)
-  slidingDoor.use = "You open the door and feel the gentle breeze on your face."
+  slidingDoor.use = "You open the door and feel the gentle breeze on your face.\n"
   LivingRoom.items.extend([chair,footstool,tv,monitor,slidingDoor]) # This is the living room items.
   
   sink = Item("sink",isTakeable = false)
-  sink.use = "You wash your hands."
+  sink.use = "You wash your hands.\n"
   fridge = Item("fridge",isTakeable = false)
-  fridge.use = "You open the fridge. There is nothing intersting."
+  fridge.use = "You open the fridge. There is nothing interesting.\n"
   cupboard = Item("cupboard",isTakeable = false)
-  cupboard.use = ("You open the cupboard.")
-  keys = SecretItem("keys") # This is revealed when they open the cupboard.
+  cupboard.use = "You open the cupboard.\n"
+  keys = SecretItem("keys",cupboard) # This is revealed when they open the cupboard.
   banana = Item("banana")
-  banana.use= "You eat the banana."
+  banana.use= "You eat the banana.\n"
   Kitchen.items.extend([sink,fridge,cupboard,banana,keys]) # This is the kitchen items.
   
   washer = Item("washer",isTakeable=false)
-  washer.use="You have no detergent to wash your clothes. You cannot use the washer"
+  washer.use="You have no detergent to wash your clothes. You cannot use the washer.\n"
   heater = Item("heater",isTakeable=false)
-  heater.use="The house starts to get warmer. In a catastrophic scheme of events, the house explodes!"#Make this a lose condition
+  heater.use="The house starts to get warmer. In a catastrophic scheme of events, the house explodes!\n"#Make this a lose condition
   Basement.items.extend([washer,heater]) # This is the basement items.
   
   lamp = Item("lamp",isTakeable=false)
-  lamp.use="You turn the lamp on."
+  lamp.use="You turn the lamp on and off.\n"
   bed = Item("bed",isTakeable=false)
-  bed.use="You take a nap."
+  bed.use="You take a nap.\n"
   nightstand = Item("nightstand",false,false)
   doubleWindow = Item("double window",isTakeable=false)
-  doubleWindow.use = "You open the window and feel the gentle breeze on your face."
+  doubleWindow.use = "You open the window and feel the gentle breeze on your face.\n"
   Bedroom.items.extend([lamp,bed,nightstand,doubleWindow])
   
   bathtub = Item("bathtub",isTakeable=false)
-  bathtub.use = "You take a bath."
+  bathtub.use = "You take a bath.\n"
   toilet = Item("toilet",isTakeable=false)
   toilet.use = "You use the toilet."
   bathroomSink = Item("bathroom sink",isTakeable=false)
-  bathroomSink.use = "You wash your hands."
+  bathroomSink.use = "You wash your hands.\n"
   window = Item("window",isTakeable=false)
-  window.use = "You open the window and feel the gentle breeze on your face."
+  window.use = "You open the window and feel the gentle breeze on your face.\n"
   mirror = Item("mirror",isTakeable=false)
-  mirror.use = "You admire your reflection."
+  mirror.use = "You admire your reflection.\n"
   Bathroom.items.extend([bathtub,toilet,bathroomSink,window,mirror])
   
   treasure = Item("treasure")
@@ -205,9 +205,9 @@ Type help to redisplay this message.\n'''
         isUnlocked = true
         map.revealSecretRoom()
         showInformation("You opened the Secret Room with the " + item + ".\nYou can now go west to enter.\n")
-      elif use == 2:
-        keys.isRevealed = true
+      elif use == 2 and not keys.isRevealed:
         printNow("You discover a set of keys.\n")
+        keys.isRevealed = true
     else:
       printNow("Please type a valid command.\n")
   
@@ -502,16 +502,19 @@ class Player(object):
     if inputItem == None:
       printNow("You cannot use the " + inputItemName + " becasue it is not in your inventory or in the room.\n")
     elif inputItem.isUsable:
-      printNow(inputItem.use)
-      if inputItemName == "heater":
-        return -1
-      elif inputItemName == "banana":
-        self.items.remove(inputItem)
-      elif inputItemName == "cupboard":
-        # Reveal keys
-        return 2
+      if inputItem.isTakeable and not self.contains(inputItem):
+        printNow("You cannot use the " + inputItemName + " becasue it is not in your inventory.\n")
+      else:
+        printNow(inputItem.use)
+        if inputItemName == "heater":
+          return -1
+        elif inputItemName == "banana":
+          self.items.remove(inputItem)
+        elif inputItemName == "cupboard":
+          # Reveal keys
+          return 2
     else:
-      printNow("You cannot use the " + inputItemName + " because it does not do anything./n")
+      printNow("You cannot use the " + inputItemName + " because it does not do anything.\n")
       
   def takeItem(self, inputItemName):
     inputItem = self.location.findItem(inputItemName)
@@ -522,7 +525,7 @@ class Player(object):
       self.location.items.remove(inputItem)
       printNow("You have taken the " + inputItemName + ".\n")
     else:
-      printNow("You cannot take the " + inputItemName + ". How did you expect to carry it?")
+      printNow("You cannot take the " + inputItemName + ". How did you expect to carry it?\n")
   
   def dropItem(self, inputItemName):
     inputItem = self.findItem(inputItemName)
@@ -559,7 +562,7 @@ class Item(object):
   def __init__(self, name, isUsable = true, isTakeable = true):
     self.name = name
     self.isUsable = isUsable
-    self.use = "You use the " + self.name + " and nothing interesting happens."
+    self.use = "You use the " + self.name + " and nothing interesting happens.\n"
     self.isTakeable = isTakeable
     
   def __repr__(self):
@@ -568,13 +571,18 @@ class Item(object):
 class SecretItem(object):
   # An item that is only revealed if the player does something
   
-  def __init__(self, name, isUsable = true, isTakeable = true, isRevealed=false):
+  def __init__(self, name, hiddenInItem, isUsable = true, isTakeable = true, isRevealed=false):
     self.name = name
     self.isUsable = isUsable
-    self.use = "You use the " + self.name + " and nothing interesting happens."
+    self.use = "You use the " + self.name + " and nothing interesting happens.\n"
     self.isTakeable = isTakeable
     self.isRevealed = isRevealed
+    self.hiddenInItem = hiddenInItem
     
+        
+  def __repr__(self):
+    return self.name
+        
 def testPlayer():
   me = Player("me","Kitchen")
   print "Player me is in the " + me.location
