@@ -1,12 +1,12 @@
 #main call to run program
 def main():
+  setMediaPath()
   intro = "---Welcome to the Testing123 House!---\n" # Using string concatenation to avoid strange triple quote behavior.
   intro += "In each room you will have "
   intro += "options of which direction you "
   intro += "would like to go. To win the "
-  intro += "game find the audio tapes "
-  intro += "and tape player, and play "
-  intro += "the tapes to hear the clue. "
+  intro += "game get the clue to find "
+  intro += "the treasure\nand win the game! "
   intro += "Remember to first take off your shoes! "
   intro += "Type mission to redisplay this message. "
   actions = '''---Actions---\nType north, east, south, or west to move.
@@ -68,8 +68,10 @@ Type help to redisplay this message.\n'''
   monitor = Item("monitor",isTakeable = false)
   monitor.use = "You do not know the password. You cannot use the computer.\n"
   slidingDoor = Item("sliding door",isTakeable = false)
-  slidingDoor.use = "You open the door and feel the gentle breeze on your face.\n"
-  LivingRoom.items.extend([chair,footstool,tv,monitor,slidingDoor]) # This is the living room items.
+  slidingDoor.use = "You open the door and feel a gentle breeze on your face.\n"
+  note = Item("note")
+  note.use = "You are now reading the note out loud.\n"
+  LivingRoom.items.extend([chair,footstool,tv,monitor,slidingDoor,note]) # This is the living room items.
   
   sink = Item("sink",isTakeable = false)
   sink.use = "You wash your hands.\n"
@@ -77,10 +79,10 @@ Type help to redisplay this message.\n'''
   fridge.use = "You open the fridge. There is nothing interesting.\n"
   cupboard = Item("cupboard",isTakeable = false)
   cupboard.use = "You open the cupboard.\n"
-  keys = SecretItem("keys",cupboard) # This is revealed when they open the cupboard.
+  key = SecretItem("key",cupboard) # This is revealed when they open the cupboard.
   banana = Item("banana")
   banana.use= "You eat the banana.\n"
-  Kitchen.items.extend([sink,fridge,cupboard,banana,keys]) # This is the kitchen items.
+  Kitchen.items.extend([sink,fridge,cupboard,banana,key]) # This is the kitchen items.
   
   washer = Item("washer",isTakeable=false)
   washer.use="You have no detergent to wash your clothes. You cannot use the washer.\n"
@@ -94,7 +96,7 @@ Type help to redisplay this message.\n'''
   bed.use="You take a nap.\n"
   nightstand = Item("nightstand",false,false)
   doubleWindow = Item("double window",isTakeable=false)
-  doubleWindow.use = "You open the window and feel the gentle breeze on your face.\n"
+  doubleWindow.use = "You open the window and feel a gentle breeze on your face.\n"
   Bedroom.items.extend([lamp,bed,nightstand,doubleWindow])
   
   bathtub = Item("bathtub",isTakeable=false)
@@ -104,7 +106,7 @@ Type help to redisplay this message.\n'''
   bathroomSink = Item("bathroom sink",isTakeable=false)
   bathroomSink.use = "You wash your hands.\n"
   window = Item("window",isTakeable=false)
-  window.use = "You open the window and feel the gentle breeze on your face.\n"
+  window.use = "You open the window and feel a gentle breeze on your face.\n"
   mirror = Item("mirror",isTakeable=false)
   mirror.use = "You admire your reflection.\n"
   Bathroom.items.extend([bathtub,toilet,bathroomSink,window,mirror])
@@ -115,7 +117,7 @@ Type help to redisplay this message.\n'''
   
   shoes = Item("shoes") # These are the players items.
   
-# Initializing Player Object to start in Room MainHall.
+# Initializing Player Object to start in Room Garage.
 # Prints out description of room and possible directions.
 # Prints out items in the room and the player's inventory.
   myPlayer = Player(name, Garage)
@@ -141,19 +143,22 @@ Type help to redisplay this message.\n'''
 # Lose conditions.
     if steps >= maxcount:
       map.showPlayerUpset(myPlayer.location.name)
+      play(makeSound('lose.wav'))
       showInformation("You ran out of time. You can only make so many moves. \n\n" + myPlayer.name.upper() + ", YOU LOSE!\n")
       break
     if myPlayer.location != Garage and myPlayer.contains(shoes): 
       map.showPlayerUpset(myPlayer.location.name)
+      play(makeSound('lose.wav'))
       showInformation("You can't enter with your shoes on.\n\n" + myPlayer.name.upper() + ", YOU LOSE!\n")
       break
 # Win conditions.
     if treasure in myPlayer.items:
       map.showPlayerHappy(myPlayer.location.name)
+      play(makeSound('win.wav'))
       showInformation(myPlayer.name.upper() + ", YOU WIN!")
       break 
 # Secret room reveal condition.
-    if myPlayer.contains(keys) and myPlayer.location == Basement and not isUnlocked and not isAlreadyNoticed:
+    if myPlayer.contains(key) and myPlayer.location == Basement and not isUnlocked and not isAlreadyNoticed:
       showInformation("You notice a door that is locked.\n")
       isAlreadyNoticed = true       
 # Parse the command.
@@ -199,15 +204,16 @@ Type help to redisplay this message.\n'''
       use = myPlayer.useItem(item, Basement, isUnlocked)
       if use == -1:
         map.showPlayerUpset(myPlayer.location.name)
+        play(makeSound('lose.wav'))
         showInformation(name.upper() + ", YOU LOSE!\n")
         break
       elif use == 1:
         isUnlocked = true
         map.revealSecretRoom()
         showInformation("You opened the Secret Room with the " + item + ".\nYou can now go west to enter.\n")
-      elif use == 2 and not keys.isRevealed:
-        printNow("You discover a set of keys.\n")
-        keys.isRevealed = true
+      elif use == 2 and not key.isRevealed:
+        printNow("You discover a key.\n")
+        key.isRevealed = true
     else:
       printNow("Please type a valid command.\n")
   
@@ -261,7 +267,6 @@ class Room(object):
     for item in self.items:
       if item.name == inputItemName:
         return item
-    return None
     
   # Displays items in the room.
   def displayItems(self):
@@ -280,7 +285,6 @@ class Room(object):
 class Map(object):
   # Initiates the map to not reveal the secret room
   def __init__(self):
-    setMediaPath()
     self.mainMap = makePicture("original map.jpg")
     self.currentMap = duplicatePicture(self.mainMap) 
     self.player = makePicture("neutralflip.png") # Initializes the player facing west.
@@ -487,23 +491,23 @@ class Player(object):
     inputItem = self.findItem(inputItemName) # Get the item of that name.
     
     # Check if trying to unlock the secret room.
-    if inputItemName == "keys" and self.contains(inputItem) and self.location == basement and not unlocked:
+    if inputItemName == "key" and self.contains(inputItem) and self.location == basement and not unlocked:
       self.location.neighborWest.doors = "one"
       self.location.doors = "one"
       return 1
-    elif inputItemName == "keys" and self.contains(inputItem) and self.location == basement and unlocked:
+    elif inputItemName == "key" and self.contains(inputItem) and self.location == basement and unlocked:
       printNow("You have already unlocked the Secret Room. You can go south to enter.\n")
-    elif inputItemName == "keys" and not self.contains(inputItem) and self.location == basement and unlocked:
+    elif inputItemName == "key" and not self.contains(inputItem) and self.location == basement and unlocked:
       printNow("You do not have the " + inputItemName + " but you have already opened this door.\n")
       
     # Checks if item exists in player's inventory then room's.  
     if inputItem == None:
       inputItem = self.location.findItem(inputItemName)
     if inputItem == None:
-      printNow("You cannot use the " + inputItemName + " becasue it is not in your inventory or in the room.\n")
+      printNow("You cannot use the " + inputItemName + " because it is not in your inventory or in the room.\n")
     elif inputItem.isUsable:
       if inputItem.isTakeable and not self.contains(inputItem):
-        printNow("You cannot use the " + inputItemName + " becasue it is not in your inventory.\n")
+        printNow("You cannot use the " + inputItemName + " because it is not in your inventory.\n")
       else:
         printNow(inputItem.use)
         if inputItemName == "heater":
@@ -511,8 +515,11 @@ class Player(object):
         elif inputItemName == "banana":
           self.items.remove(inputItem)
         elif inputItemName == "cupboard":
-          # Reveal keys
+          # Reveal key
           return 2
+        elif inputItemName == "note":
+          audio = makeSound('hint.wav')
+          play(audio)
     else:
       printNow("You cannot use the " + inputItemName + " because it does not do anything.\n")
       
@@ -578,8 +585,7 @@ class SecretItem(object):
     self.isTakeable = isTakeable
     self.isRevealed = isRevealed
     self.hiddenInItem = hiddenInItem
-    
-        
+
   def __repr__(self):
     return self.name
         
@@ -610,18 +616,18 @@ def testSecretItem():
   Kitchen = Room("Kitchen", None, None, None, None, None, None, "one", false, [])
   cupboard = Item("cupboard",isTakeable = false)
   cupboard.use = ("You open the cupboard.")
-  keys = SecretItem("keys") # This is revealed when they open the cupboard.
-  Kitchen.items.extend([cupboard,keys])
+  key = SecretItem("key") # This is revealed when they open the cupboard.
+  Kitchen.items.extend([cupboard,key])
   player = Player("me",Kitchen)
-  printNow("Trying to take keys before opening cupboard")
-  player.takeItem("keys")
+  printNow("Trying to take key before opening cupboard")
+  player.takeItem("key")
   if player.useItem("cupboard","basement",false) == 2:
-    keys.isRevealed = true
-  printNow("The keys should now be revealed. isRevealed equals %s" %str(keys.isRevealed))
+    key.isRevealed = true
+  printNow("The key should now be revealed. isRevealed equals %s" %str(key.isRevealed))
   
   
 def testSecretItemCreation():
-  keys = SecretItem("keys")
-  print keys.isRevealed
-  keys.isRevealed = true
-  print keys.isRevealed
+  key = SecretItem("key")
+  print key.isRevealed
+  key.isRevealed = true
+  print key.isRevealed
