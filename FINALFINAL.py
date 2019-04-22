@@ -9,9 +9,9 @@ def main():
   intro += "the treasure\nand win the game! "
   intro += "Remember to first take off your shoes! "
   intro += "Type mission to redisplay this message. "
-  actions = '''---Actions---\nType north, east, south, or west to move.
-Type use to use an item.
+  actions = '''---Actions---\nType left or right to move.
 Type climb up or climb down to use a ladder.
+Type use to use an item.
 Type take to take an item.
 Type drop to drop an item.
 Type examine to check what items are in a room.
@@ -25,33 +25,33 @@ Type help to redisplay this message.\n'''
   showInformation(actions)
   
 # Initializing Room objects.
-  Garage = Room("Garage",None, None, None, None, None, None, "one",  false, [])
-  LivingRoom = Room("Living Room", None, None, None, None, None, None, "two", true, [])
-  Kitchen = Room("Kitchen", None, None, None, None, None, None, "one", false, [])
-  Bathroom = Room("Bathroom", None, None, None, None, None, None, "one", false, [])
-  Bedroom = Room("Bedroom", None, None, None, None, None, None, "one", true, [])
-  Attic = Room("Attic", None, None, None, None, None, None, "no", true, [])
-  Basement = Room("Basement", None, None, None, None, None, None, "no", true, [])
-  Pantry = Room("Pantry", None, None, None, None, None, None, "two", false, [])
-  SecretRoom = Room("Secret Room", None, None, None, None, None, None, "no", false, []) 
+  Garage = Room("Garage",None, None, "one",  false, [])
+  LivingRoom = Room("Living Room", None, None, "two", true, [])
+  Kitchen = Room("Kitchen", None, None, "one", false, [])
+  Bathroom = Room("Bathroom", None, None, "one", false, [])
+  Bedroom = Room("Bedroom", None, None, "one", true, [])
+  Attic = Room("Attic", None, None, "no", true, [])
+  Basement = Room("Basement", None, None, "no", true, [])
+  Pantry = Room("Pantry", None, None, "two", false, [])
+  SecretRoom = Room("Secret Room", None, None, "no", false, []) 
   
 # Creating Room neighbor connections.
-  Garage.neighborWest = Pantry
-  Pantry.neighborEast = Garage
-  Pantry.neighborWest = LivingRoom
-  LivingRoom.neighborEast = Pantry
-  LivingRoom.neighborWest = Kitchen
+  Garage.neighborLeft = Pantry
+  Pantry.neighborRight= Garage
+  Pantry.neighborLeft = LivingRoom
+  LivingRoom.neighborRight = Pantry
+  LivingRoom.neighborLeft = Kitchen
   LivingRoom.neighborDown = Basement
   LivingRoom.neighborUp = Bedroom
-  Bedroom.neighborWest = Bathroom
+  Bedroom.neighborLeft = Bathroom
   Bedroom.neighborUp = Attic
   Bedroom.neighborDown = LivingRoom
   Attic.neighborDown = Bedroom
-  Bathroom.neighborEast = Bedroom
-  Kitchen.neighborEast = LivingRoom
+  Bathroom.neighborRight = Bedroom
+  Kitchen.neighborRight = LivingRoom
   Basement.neighborUp = LivingRoom
-  Basement.neighborWest = SecretRoom
-  SecretRoom.neighborEast = Basement
+  Basement.neighborLeft = SecretRoom
+  SecretRoom.neighborRight = Basement
 
 # Prompts user for name.
   name = requestString("What is your name?")
@@ -166,7 +166,7 @@ Type help to redisplay this message.\n'''
     if command == "exit" or command == "quit":
       showInformation("You are now exiting the game!")
       break
-    elif command == "north" or command == "south" or command == "east" or command == "west":
+    elif command == "left" or command == "right":
       previousRoom = myPlayer.location
       steps += myPlayer.move(command)
       map.movePlayer(previousRoom.name,myPlayer.location.name,command)
@@ -210,7 +210,7 @@ Type help to redisplay this message.\n'''
       elif use == 1:
         isUnlocked = true
         map.revealSecretRoom()
-        showInformation("You opened the Secret Room with the " + item + ".\nYou can now go west to enter.\n")
+        showInformation("You opened the Secret Room with the " + item + ".\nYou can now go left to enter.\n")
       elif use == 2 and not key.isRevealed:
         printNow("You discover a key.\n")
         key.isRevealed = true
@@ -221,14 +221,12 @@ Type help to redisplay this message.\n'''
 #############################################################################
 class Room(object):
 # Creates a room object with attributes to account for "neighbor" rooms.
-  def __init__(self, name, neighborUp, neighborDown, neighborNorth, neighborEast, neighborSouth, neighborWest, doors, ladder, items):
+  def __init__(self, name, neighborUp, neighborDown, neighborRight, neighborLeft, doors, ladder, items):
     self.name = name
     self.neighborUp = neighborUp
     self.neighborDown = neighborDown
-    self.neighborNorth = neighborNorth
-    self.neighborEast = neighborEast
-    self.neighborSouth = neighborSouth
-    self.neighborWest = neighborWest
+    self.neighborRight = neighborRight
+    self.neighborLeft = neighborLeft
     self.doors = doors
     self.ladder = ladder
     self.items = items
@@ -248,14 +246,10 @@ class Room(object):
   #Informs the player which direction they can go    
   def direction(self):
     dir = ""
-    if self.neighborNorth != None:
-      dir += "You can go north. "
-    if self.neighborEast != None:
-      dir += "You can go east. "
-    if self.neighborSouth != None:
-      dir += "You can go south. "
-    if self.neighborWest != None and (self.neighborWest.name != "Secret Room" or self.neighborWest.doors == "one"): # Don't reveal secret room.:
-      dir += "You can go west. "
+    if self.neighborRight != None:
+      dir += "You can go right. "
+    if self.neighborLeft != None and (self.neighborLeft.name != "Secret Room" or self.neighborLeft.doors == "one"): # Don't reveal secret room.:
+      dir += "You can go left. "
     if self.neighborUp != None:
       dir += "You can climb up. "
     if self.neighborDown != None:
@@ -287,8 +281,8 @@ class Map(object):
   def __init__(self):
     self.mainMap = makePicture("original map.jpg")
     self.currentMap = duplicatePicture(self.mainMap) 
-    self.player = makePicture("neutralflip.png") # Initializes the player facing west.
-    self.playerDir = "west"
+    self.player = makePicture("neutralflip.png") # Initializes the player facing left.
+    self.playerDir = "left"
     self.movePlayer("Garage","Garage","none") # Initialize the player in the Garage.
 
   # Repaints the map with the player in the given room.
@@ -301,14 +295,14 @@ class Map(object):
       self.player = makePicture("attic.png") 
     elif previousRoomName == "Attic":
       self.player = makePicture("neutralflip.png")
-      self.playerDir = "west"
-    # Change player to east or west facing
-    if direction == "east" and self.playerDir != "east":
+      self.playerDir = "right"
+    # Change player to left or right facing
+    if direction == "right" and self.playerDir != "right":
       self.player = makePicture("neutral.png")
-      self.playerDir = "east"
-    elif (direction == "west" or direction == "down") and self.playerDir != "west":
+      self.playerDir = "right"
+    elif (direction == "left" or direction == "down") and self.playerDir != "left":
       self.player = makePicture("neutralflip.png")
-      self.playerDir = "west"
+      self.playerDir = "left"
     # Repaint player.
     self.chromaKey(xloc, yloc)
   
@@ -383,19 +377,19 @@ def testMap():
   mymap = Map()
   mymap.movePlayer("Garage","Garage","none")
   requestString("OK?")
-  mymap.movePlayer("Garage","Pantry","west")
+  mymap.movePlayer("Garage","Pantry","left")
   requestString("OK?")
-  mymap.movePlayer("Pantry","Living Room","west")
+  mymap.movePlayer("Pantry","Living Room","left")
   requestString("OK?")
-  mymap.movePlayer("Living Room","Kitchen","west")
+  mymap.movePlayer("Living Room","Kitchen","left")
   requestString("OK?")
-  mymap.movePlayer("Kitchen","Living Room","east")
+  mymap.movePlayer("Kitchen","Living Room","right")
   requestString("OK?")
   mymap.movePlayer("Living Room","Bedroom","none")
   requestString("OK?")
-  mymap.movePlayer("Bedroom","Bathroom","west")
+  mymap.movePlayer("Bedroom","Bathroom","left")
   requestString("OK?")
-  mymap.movePlayer("Bathroom","Bedroom","east")
+  mymap.movePlayer("Bathroom","Bedroom","right")
   requestString("OK?")
   mymap.movePlayer("Bedroom","Attic","none")
   requestString("OK?")
@@ -407,7 +401,7 @@ def testMap():
   requestString("OK?")
   mymap.revealSecretRoom()
   requestString("OK?")
-  mymap.movePlayer("Basement","Secret Room","west")
+  mymap.movePlayer("Basement","Secret Room","left")
 
  
  
@@ -419,24 +413,14 @@ class Player(object):
     self.items = []
     
   def move(self, direction):
-    if direction == "north" and self.location.neighborNorth != None:
-      self.location = self.location.neighborNorth
+    if direction == "right" and self.location.neighborRight != None:
+      self.location = self.location.neighborRight
       self.location.description()
       self.location.direction()
       self.location.displayItems()
-    elif direction == "east" and self.location.neighborEast != None:
-      self.location = self.location.neighborEast
-      self.location.description()
-      self.location.direction()
-      self.location.displayItems()
-    elif direction == "south" and self.location.neighborSouth != None:
-      self.location = self.location.neighborSouth
-      self.location.description()
-      self.location.direction()
-      self.location.displayItems()
-    elif direction == "west" and self.location.neighborWest != None \
-    and (self.location.neighborWest.name != "Secret Room" or self.location.neighborWest.doors == "one"): # Don't let them go into the secret room until unlocked with door set to "one":
-      self.location = self.location.neighborWest
+    elif direction == "left" and self.location.neighborLeft != None \
+    and (self.location.neighborLeft.name != "Secret Room" or self.location.neighborLeft.doors == "one"): # Don't let them go into the secret room until unlocked with door set to "one":
+      self.location = self.location.neighborLeft
       self.location.description()
       self.location.direction()
       self.location.displayItems()
@@ -489,11 +473,11 @@ class Player(object):
       return
     # Check if trying to unlock the secret room.
     if inputItemName == "key" and self.contains(inputItem) and self.location == basement and not unlocked:
-      self.location.neighborWest.doors = "one"
+      self.location.neighborLeft.doors = "one"
       self.location.doors = "one"
       return 1
     elif inputItemName == "key" and self.contains(inputItem) and self.location == basement and unlocked:
-      printNow("You have already unlocked the Secret Room. You can go south to enter.\n")
+      printNow("You have already unlocked the Secret Room. You can go left to enter.\n")
     elif inputItemName == "key" and not self.contains(inputItem) and self.location == basement and unlocked:
       printNow("You do not have the " + inputItemName + " but you have already opened this door.\n")
     # Checks if item exists in player's inventory then room's.  
