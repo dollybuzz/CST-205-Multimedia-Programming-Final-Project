@@ -58,7 +58,7 @@ Type help to redisplay this message.\n'''
   
 # Initializes items
   car = Item("car", isTakeable = false)
-  car.use = "You cannot drive anywhere."
+  car.use = "You cannot drive anywhere.\n"
   Garage.items.append(car) # This is the garage items.
   
   chair = Item("chair",isTakeable = false)
@@ -102,7 +102,7 @@ Type help to redisplay this message.\n'''
   bathtub = Item("bathtub",isTakeable=false)
   bathtub.use = "You take a bath.\n"
   toilet = Item("toilet",isTakeable=false)
-  toilet.use = "You use the toilet."
+  toilet.use = "You use the toilet.\n"
   bathroomSink = Item("bathroom sink",isTakeable=false)
   bathroomSink.use = "You wash your hands.\n"
   window = Item("window",isTakeable=false)
@@ -203,7 +203,7 @@ Type help to redisplay this message.\n'''
       item = requestString("What item do you want to use?")
       use = myPlayer.useItem(item, Basement, isUnlocked)
       if use == -1:
-        map.showPlayerUpset(myPlayer.location.name)
+        map.showExplosion()
         play(makeSound('lose.wav'))
         showInformation(name.upper() + ", YOU LOSE!\n")
         break
@@ -322,6 +322,13 @@ class Map(object):
         setColor(getPixel(self.mainMap,x,y),color) # Adds secret room to mainMap so is there from now on.
     repaint(self.currentMap)
   
+  # Updates the currentMap to be an image of the house exploded.
+  def showExplosion(self):
+    explosion = makePicture("explosion.png") # Has same dimensions as currentMap.
+    copyInto(explosion,self.currentMap,0,0) # Faster than iterating over image.
+    repaint(self.currentMap)
+        
+  
   # Sets the player to be upset looking and repaints the map.
   def showPlayerUpset(self,roomName):
     self.player = makePicture("upset.png")
@@ -401,20 +408,7 @@ def testMap():
   mymap.revealSecretRoom()
   requestString("OK?")
   mymap.movePlayer("Basement","Secret Room","west")
-  # mymap.revealSecretRoom()
-    
-  '''
-  #Haven't used the flipped versions yet. Should the player always face the direction they just moved?
-  secretRoom= makePicture("hiddenroom.jpg")
-  winPlayer = makePicture("happy.png")
-  #winPlayerFlip = makePicture("happyflip.png")
-  player = makePicture("neutral.png")
-  #playerFlip = makePicture("neutralflip.png")
-  losePlayer = makePicture("upset.png")
-  #losePlayerFlip = makePicture("upsetflip.png")
-  atticPlayer = makePicture("attic.png")
-  #atticPlayerFlip = makePicture("atticflip.png") 
-  '''
+
  
  
 ###################################################################################
@@ -489,7 +483,10 @@ class Player(object):
   # Returns 2 if using the item reveals the secret item
   def useItem(self, inputItemName, basement, unlocked):
     inputItem = self.findItem(inputItemName) # Get the item of that name.
-    
+    # Check if trying to use ladder.
+    if inputItemName == "ladder":
+      printNow("Are you trying to use the ladder? Try to climb up or climb down.\n")
+      return
     # Check if trying to unlock the secret room.
     if inputItemName == "key" and self.contains(inputItem) and self.location == basement and not unlocked:
       self.location.neighborWest.doors = "one"
@@ -499,7 +496,6 @@ class Player(object):
       printNow("You have already unlocked the Secret Room. You can go south to enter.\n")
     elif inputItemName == "key" and not self.contains(inputItem) and self.location == basement and unlocked:
       printNow("You do not have the " + inputItemName + " but you have already opened this door.\n")
-      
     # Checks if item exists in player's inventory then room's.  
     if inputItem == None:
       inputItem = self.location.findItem(inputItemName)
@@ -558,7 +554,7 @@ class Player(object):
   # Displays items in the player's inventory.
   def displayItems(self):
     if len(self.items) == 0:
-      printNow("There are no items in your inventory.")
+      printNow("There are no items in your inventory.\n")
     else:
       printNow("The items in your inventory are:")
       for item in self.items:
@@ -615,7 +611,7 @@ def testFindItems():
 def testSecretItem():
   Kitchen = Room("Kitchen", None, None, None, None, None, None, "one", false, [])
   cupboard = Item("cupboard",isTakeable = false)
-  cupboard.use = ("You open the cupboard.")
+  cupboard.use = ("You open the cupboard.\n")
   key = SecretItem("key") # This is revealed when they open the cupboard.
   Kitchen.items.extend([cupboard,key])
   player = Player("me",Kitchen)
