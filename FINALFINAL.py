@@ -25,15 +25,15 @@ Type help to redisplay this message.\n'''
   showInformation(actions)
   
 # Initializing Room objects.
-  Garage = Room("Garage",None, None, "one",  false, [])
-  LivingRoom = Room("Living Room", None, None, "two", true, [])
-  Kitchen = Room("Kitchen", None, None, "one", false, [])
-  Bathroom = Room("Bathroom", None, None, "one", false, [])
-  Bedroom = Room("Bedroom", None, None, "one", true, [])
-  Attic = Room("Attic", None, None, "no", true, [])
-  Basement = Room("Basement", None, None, "no", true, [])
-  Pantry = Room("Pantry", None, None, "two", false, [])
-  SecretRoom = Room("Secret Room", None, None, "no", false, []) 
+  Garage = Room("Garage",None, None, None, None, "one",  false, [])
+  LivingRoom = Room("Living Room", None, None, None, None, "two", true, [])
+  Kitchen = Room("Kitchen", None, None, None, None, "one", false, [])
+  Bathroom = Room("Bathroom", None, None, None, None, "one", false, [])
+  Bedroom = Room("Bedroom", None, None, None, None, "one", true, [])
+  Attic = Room("Attic", None, None, None, None, "no", true, [])
+  Basement = Room("Basement", None, None, None, None, "no", true, [])
+  Pantry = Room("Pantry", None, None, None, None, "two", false, [])
+  SecretRoom = Room("Secret Room", None, None, None, None, "no", false, []) 
   
 # Creating Room neighbor connections.
   Garage.neighborLeft = Pantry
@@ -274,7 +274,7 @@ class Room(object):
       printNow("")
       
       
-#############################################################################
+#####################################################################################
 #Creating the visual Map. Shows the map.
 class Map(object):
   # Initiates the map to not reveal the secret room
@@ -372,38 +372,6 @@ class Map(object):
     xloc = roomDict[roomName][0]
     yloc = roomDict[roomName][1]
     return xloc, yloc
-    
-def testMap():
-  mymap = Map()
-  mymap.movePlayer("Garage","Garage","none")
-  requestString("OK?")
-  mymap.movePlayer("Garage","Pantry","left")
-  requestString("OK?")
-  mymap.movePlayer("Pantry","Living Room","left")
-  requestString("OK?")
-  mymap.movePlayer("Living Room","Kitchen","left")
-  requestString("OK?")
-  mymap.movePlayer("Kitchen","Living Room","right")
-  requestString("OK?")
-  mymap.movePlayer("Living Room","Bedroom","none")
-  requestString("OK?")
-  mymap.movePlayer("Bedroom","Bathroom","left")
-  requestString("OK?")
-  mymap.movePlayer("Bathroom","Bedroom","right")
-  requestString("OK?")
-  mymap.movePlayer("Bedroom","Attic","none")
-  requestString("OK?")
-  mymap.movePlayer("Attic","Bedroom","down")
-  requestString("OK?")
-  mymap.movePlayer("Bedroom","Living Room","down")
-  requestString("OK?")
-  mymap.movePlayer("Living Room","Basement","down")
-  requestString("OK?")
-  mymap.revealSecretRoom()
-  requestString("OK?")
-  mymap.movePlayer("Basement","Secret Room","left")
-
- 
  
 ###################################################################################
 class Player(object):
@@ -502,7 +470,10 @@ class Player(object):
           play(audio)
     else:
       printNow("You cannot use the " + inputItemName + " because it does not do anything.\n")
-      
+  
+  # Takes in a string of the item name.
+  # Checks if the item is in the room, 
+  # and updates the player and room's items attributes and prints out a message.
   def takeItem(self, inputItemName):
     inputItem = self.location.findItem(inputItemName)
     if inputItem == None or (isinstance(inputItem, SecretItem) and not inputItem.isRevealed):
@@ -514,6 +485,9 @@ class Player(object):
     else:
       printNow("You cannot take the " + inputItemName + ". How did you expect to carry it?\n")
   
+  # Takes in a string of the item name.
+  # Checks if the item is in the player's items list, 
+  # and updates the player and room's items attributes and prints out a message.
   def dropItem(self, inputItemName):
     inputItem = self.findItem(inputItemName)
     if inputItem == None:
@@ -525,11 +499,12 @@ class Player(object):
     else:
       printNow("You cannot take the " + inputItemName + ". How did you expect to carry it?")
   
+  # Given a string with the name of an item
+  # searches the list of item objects for one with that name and returns the object
   def findItem(self, inputItemName):
     for item in self.items:
       if item.name == inputItemName:
         return item
-    return None
     
   # Checks if an item is in inventory.
   def contains(self, inputItem):
@@ -544,7 +519,9 @@ class Player(object):
       for item in self.items:
         printNow(item)
       printNow("")
-    
+
+######################################################################################
+# Creates a class for representing item objects in the game.
 class Item(object):
   def __init__(self, name, isUsable = true, isTakeable = true):
     self.name = name
@@ -555,6 +532,7 @@ class Item(object):
   def __repr__(self):
     return self.name
     
+# Creates a class for representing hidden items in the game.
 class SecretItem(object):
   # An item that is only revealed if the player does something
   
@@ -568,46 +546,3 @@ class SecretItem(object):
 
   def __repr__(self):
     return self.name
-        
-def testPlayer():
-  me = Player("me","Kitchen")
-  print "Player me is in the " + me.location
-  print "Player me is named " + me.name
-  print "Player me has " + str(me.items)
-  print
-  you = Player("you","Bedroom")
-  print "Player you is in the " + you.location
-  print "Player you is named " + you.name
-  print "Player you has " + str(you.items)
-  print
-  you.items.append("banana")
-  print "Now player you has " + str(you.items)
-  print "Checking player me has " + str(me.items)
-  
-def testFindItems():
-  me = Player("me","Kitchen")
-  banana = Item("banana")
-  me.items.append(banana)
-  print "The player has the items: " + str(me.items)
-  inputItem = me.findItem("banana")
-  print "Using the findItem method returns the item " + str(inputItem)
-  
-def testSecretItem():
-  Kitchen = Room("Kitchen", None, None, None, None, None, None, "one", false, [])
-  cupboard = Item("cupboard",isTakeable = false)
-  cupboard.use = ("You open the cupboard.\n")
-  key = SecretItem("key") # This is revealed when they open the cupboard.
-  Kitchen.items.extend([cupboard,key])
-  player = Player("me",Kitchen)
-  printNow("Trying to take key before opening cupboard")
-  player.takeItem("key")
-  if player.useItem("cupboard","basement",false) == 2:
-    key.isRevealed = true
-  printNow("The key should now be revealed. isRevealed equals %s" %str(key.isRevealed))
-  
-  
-def testSecretItemCreation():
-  key = SecretItem("key")
-  print key.isRevealed
-  key.isRevealed = true
-  print key.isRevealed
